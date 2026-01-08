@@ -3,6 +3,12 @@ let isLiffReady = false;
 
 
 window.onload = function () {
+    // 檢查是否曾經學會過最小化
+    if (localStorage.getItem('hasLearnedMinimize') === 'true') {
+        const guide = document.getElementById('minimize-guide');
+        if (guide) guide.remove();
+    }
+
     if (typeof MY_LIFF_ID !== 'undefined') {
         initializeLiff(MY_LIFF_ID);
     }
@@ -409,14 +415,84 @@ function updateCount(type) {
 function sendToLine(text) {
     if (!text) return;
 
+    // 1. ✨ 自動隱藏邏輯：紀錄使用者已學會操作
+    localStorage.setItem('hasLearnedMinimize', 'true');
+
+    // 2. ✨ 立刻從畫面上移除引導條 (帶有淡出效果)
+    const guide = document.getElementById('minimize-guide');
+    if (guide) {
+        guide.style.transition = 'opacity 0.5s ease';
+        guide.style.opacity = '0';
+        setTimeout(() => guide.remove(), 500);
+    }
+
+    // 3. 執行複製功能
     navigator.clipboard.writeText(text).then(() => {
         Swal.fire({
             icon: 'success',
             title: '建議已複製！',
-            // 引導使用者使用 CP 值最高的最小化功能
-            text: '點擊右上角「最小化」回到聊天室貼上即可。',
-            confirmButtonColor: '#80CBC4'
+            html: `
+                <div class="text-sm text-gray-600 space-y-2">
+                    <p>文字已就緒，請依以下步驟貼上：</p>
+                    <div class="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-300">
+                        <b class="text-brand-dark">按住頂部橫槓往下滑</b><br>
+                        將程式最小化為懸浮圓標 ✨
+                    </div>
+                    <p class="text-gray-500 text-[11px]">(或是點擊右上角 ✕ 關閉視窗)</p>
+                    <p class="text-brand-dark font-bold pt-1">回到聊天室長按「貼上」即可！</p>
+                </div>
+            `,
+            confirmButtonText: '我學會了！',
+            confirmButtonColor: '#4DB6AC'
         });
     });
 }
 
+function confirmResetChat() {
+    Swal.fire({
+        title: '確定要清空嗎？',
+        text: "目前的對話建議將會消失喔！",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#80CBC4',
+        cancelButtonColor: '#ffabb2',
+        confirmButtonText: '確定清空',
+        cancelButtonText: '取消'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetChat();
+            toggleSettings(); // 關閉設定選單
+        }
+    });
+}
+
+function resetChat() {
+    const history = document.getElementById('chat-history');
+
+    // 1. 清空所有內容
+    history.innerHTML = '';
+
+    // 2. 重新放入初始歡迎訊息
+    const welcomeHtml = `
+        <div class="flex items-start animate-fade-in-up">
+            <div class="bg-white dark:bg-[#2D2D2D] border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-5 py-3 text-sm max-w-[85%] shadow-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                嗨！我是 LittleTone。<br>我們開始一段新的對話吧！今天有什麼想聊的嗎？🌱
+            </div>
+        </div>
+    `;
+    history.innerHTML = welcomeHtml;
+
+    // 3. 重置全域變數
+    hiddenOptions = [];
+    currentCoachData = null;
+
+    // 4. (選用) 如果後端有 Session，可以發送請求清除
+    // fetch('/api/reset', { method: 'POST' });
+
+    Swal.fire({
+        icon: 'success',
+        title: '已重置',
+        timer: 1000,
+        showConfirmButton: false
+    });
+}
