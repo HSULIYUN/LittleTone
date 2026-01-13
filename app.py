@@ -33,6 +33,7 @@ async def chat_endpoint():
             return jsonify({"status": "error", "message": "請提供文字訊息或圖片截圖"}), 400
 
         # 3. 呼叫核心服務 (必須使用 await)
+        has_image = "有" if image_base64 else "無"
         print(f"[App] 正在處理請求: {user_text[:20]}...")
         
         # 執行異步函式取得 AI 的完整 JSON 結果

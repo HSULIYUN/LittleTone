@@ -46,40 +46,43 @@ async function sendEmotion() {
     const inputElement = document.getElementById('emotion-input');
     const text = inputElement.value.trim();
 
-    // 如果沒文字也沒圖片，就不送出
     if (!text && !currentImageBase64) {
-        Swal.fire({ icon: 'info', title: '請輸入訊息或上傳圖片喔！', confirmButtonColor: '#80CBC4' });
+        Swal.fire({ icon: 'info', title: '請輸入訊息或上傳圖片喔！' });
         return;
     }
 
-    // 移除上一次留下的「生成建議」按鈕
     const oldBtn = document.getElementById('btn-ready-container');
     if (oldBtn) oldBtn.remove();
 
-    // 顯示使用者訊息 (如果有圖片，可以在對話框提示)
-    const userMsg = text || (currentImageBase64 ? "📷 [已傳送一張截圖]" : "");
-    addMessage(userMsg, 'user');
+    // --- 新增：如果使用者有傳圖片，先在聊天室顯示圖片 ---
+    if (currentImageBase64) {
+        addMessage(currentImageBase64, 'user', false, true);
+    }
 
-    // 顯示 Loading 氣泡
-    const loadingHtml = `<div class="flex space-x-1.5 h-6 items-center px-1">
-        <div class="w-2 h-2 rounded-full animate-bounce-dot bg-brand"></div>
-        <div class="w-2 h-2 rounded-full animate-bounce-dot delay-100 bg-brand"></div>
-        <div class="w-2 h-2 rounded-full animate-bounce-dot delay-200 bg-brand"></div>
-    </div>`;
+    // 顯示文字訊息
+    if (text) {
+        addMessage(text, 'user');
+    }
+
+    const loadingHtml = `
+    <div class="flex space-x-1.5 h-6 items-center px-1">
+        <div class="w-2 h-2 rounded-full bg-brand animate-bounce-dot"></div>
+        <div class="w-2 h-2 rounded-full bg-brand animate-bounce-dot delay-100"></div>
+        <div class="w-2 h-2 rounded-full bg-brand animate-bounce-dot delay-200"></div>
+    </div>
+`;
     const loadingId = addMessage(loadingHtml, 'system', true);
-
-    // 準備傳送給後端的 Payload (需符合 app.py 規範)
+    // 準備 Payload
     const payload = {
         message: text,
-        image: currentImageBase64 ? currentImageBase64.split(',')[1] : null // 僅傳送 Base64 字串部分
+        // 只傳送逗號後面的純 Base64 字串給後端處理
+        image: currentImageBase64 ? currentImageBase64.split(',')[1] : null
     };
 
     try {
-        // 清空輸入區 (使用者體驗優化：送出即清空)
         inputElement.value = "";
         updateCount();
-        const savedImage = currentImageBase64; // 暫存起來以便出錯時處理
-        clearImage();
+        clearImage(); // 傳送後清空預覽
 
         const res = await fetch('/api/chat', {
             method: 'POST',
@@ -88,36 +91,19 @@ async function sendEmotion() {
         });
 
         const jsonResponse = await res.json();
-
-        // 精確移除 Loading 氣泡
         removeMessage(loadingId);
 
         if (jsonResponse.status === "success") {
-            const data = jsonResponse.data; // 對應 app.py 的回傳結構
-
-            // 1. 顯示 AI 同理回覆
+            const data = jsonResponse.data;
             addMessage(data.reply, 'system');
-
-            // 2. 顯示核心洞察亮點
             if (data.key_change) addHighlightBubble(data.key_change);
-
-            // 3. 暫存資料供後續「生成語氣」使用
             hiddenOptions = data.options || [];
-            currentCoachData = {
-                analysis: data.analysis || "",
-                tip: data.tip || ""
-            };
-
-            // 4. 產生這一輪新的功能按鈕
+            currentCoachData = { analysis: data.analysis, tip: data.tip };
             addReadyButton();
-        } else {
-            throw new Error(jsonResponse.message || "API 錯誤");
         }
-
     } catch (e) {
-        console.error("傳送失敗:", e);
         removeMessage(loadingId);
-        addMessage('抱歉，LittleTone 連線有點不穩，請再試一次。', 'system');
+        addMessage('連線不穩，請再試一次。', 'system');
     }
 }
 
@@ -154,7 +140,7 @@ function clearImage() {
 }
 
 // --- 4. UI 輔助函式 ---
-function addMessage(content, sender, isHtml = false) {
+function addMessage(content, sender, isHtml = false, isImage = false) {
     const history = document.getElementById('chat-history');
     const div = document.createElement('div');
     const id = 'msg-' + Math.random().toString(36).substr(2, 9);
@@ -162,12 +148,19 @@ function addMessage(content, sender, isHtml = false) {
     div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} mb-5 animate-fade-in-up`;
 
     const bubble = document.createElement('div');
-    bubble.className = `px-5 py-3 text-[15px] max-w-[88%] rounded-2xl shadow-sm leading-relaxed whitespace-pre-wrap ${sender === 'user'
+    bubble.className = `px-5 py-3 text-[15px] max-w-[88%] rounded-2xl shadow-sm leading-relaxed ${sender === 'user'
         ? 'bg-gradient-to-br from-brand to-brand-dark text-white rounded-tr-none shadow-brand/20'
         : 'bg-white dark:bg-[#2D2D2D] text-gray-700 dark:text-gray-200 rounded-tl-none border border-gray-100/50 dark:border-gray-800'
         }`;
 
-    if (isHtml) {
+    if (isImage) {
+        // 如果是圖片，創建一個 img 標籤
+        const img = document.createElement('img');
+        img.src = content; // 這裡傳入完整的 data:image/... base64
+        img.className = "rounded-lg max-w-full h-auto mt-1 cursor-pointer";
+        img.onclick = () => window.open(content); // 點擊可看大圖
+        bubble.appendChild(img);
+    } else if (isHtml) {
         bubble.innerHTML = content;
     } else {
         bubble.innerText = content;
