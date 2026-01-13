@@ -326,3 +326,53 @@ function sendToLine(text) {
         });
     });
 }
+
+async function selectImageFromGallery() {
+    // 檢查是否在 LIFF 環境
+    if (!liff.isInClient()) {
+        // 若不在 LINE 內，回退到原本的隱藏 input
+        document.getElementById('image-input').click();
+        return;
+    }
+
+    // 注意：部分 LIFF 版本支援原生選擇，若無則仍需使用過濾機制
+    // 下面提供通用的「前端過濾」機制
+    document.getElementById('image-input').click();
+}
+
+function handleImagePreview(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('image-preview-container');
+    const previewImage = document.getElementById('image-preview');
+
+    if (file) {
+        // 1. 防範流量浪費：限制檔案大小 (限制為 2MB，節省傳輸流量)
+        const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+        if (file.size > MAX_SIZE) {
+            Swal.fire({
+                icon: 'warning',
+                title: '檔案太大了',
+                text: '為了幫你省流量，請選擇 2MB 以下的截圖喔！',
+                confirmButtonColor: '#80CBC4'
+            });
+            clearImage();
+            return;
+        }
+
+        // 2. 格式檢查 (只允許常見圖片格式)
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(file.type)) {
+            Swal.fire({ icon: 'error', title: '格式不符', text: '僅支援相簿中的 JPG 或 PNG 圖片。' });
+            clearImage();
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            currentImageBase64 = e.target.result;
+            previewImage.src = e.target.result;
+            previewContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+}
