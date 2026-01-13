@@ -27,7 +27,6 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
     <script>
@@ -62,8 +61,7 @@
             <div class="flex items-center justify-between relative min-h-[32px]">
                 <div class="flex items-center relative">
                     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="LittleTone"
-                        class="h-8 w-auto object-contain" style="filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.3));">
-
+                        class="h-8 w-auto object-contain">
                     <div class="relative ml-2">
                         <button onclick="toggleHelpTooltip()"
                             class="text-gray-300 hover:text-brand transition-colors p-1">
@@ -75,11 +73,10 @@
                         </button>
                         <div id="help-tooltip"
                             class="hidden absolute left-0 top-8 w-48 p-3 bg-white dark:bg-[#2D2D2D] rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 z-50 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed animate-fade-in">
-                            告訴我發生了什麼事，或是想回覆什麼話，我會陪你聊聊或給你建議喔！🌱
+                            告訴我發生了什麼事，或是想請我分析對話截圖嗎？跟我聊聊吧！🌱
                         </div>
                     </div>
                 </div>
-
                 <button onclick="toggleSettings()" class="text-gray-400 hover:text-brand transition-colors p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -93,129 +90,111 @@
         </div>
 
         <div class="flex-1 relative overflow-hidden bg-brand-gray dark:bg-[#121212]">
-            <div id="view-emotion" class="w-full h-full flex flex-col relative">
-                <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar pb-40">
-                    <div class="flex items-start animate-fade-in-up">
-                        <div
-                            class="bg-white dark:bg-[#2D2D2D] border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-5 py-3 text-sm max-w-[85%] shadow-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                            嗨！我是 LittleTone。<br>
-                            今天發生了什麼事，或是想請我分析對話截圖嗎？跟我聊聊吧！🌱
-                        </div>
+            <div id="chat-history" class="h-full overflow-y-auto p-4 space-y-5 no-scrollbar pb-40">
+                <div class="flex items-start animate-fade-in-up">
+                    <div
+                        class="bg-white dark:bg-[#2D2D2D] border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-5 py-3 text-sm max-w-[85%] shadow-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        嗨！我是 LittleTone。<br>
+                        今天發生了什麼事，或是想請我分析對話截圖嗎？跟我聊聊吧！🌱
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-[#1E1E1E]/90 backdrop-blur-lg p-4 border-t border-gray-100 dark:border-gray-800">
+
+                <div id="image-preview-container" class="hidden mb-3 flex items-center animate-fade-in">
+                    <div class="relative inline-block">
+                        <img id="image-preview" src=""
+                            class="w-20 h-20 object-cover rounded-xl border-2 border-brand-light shadow-md">
+                        <button onclick="clearImage()"
+                            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-600 active:scale-90 transition-all">✕</button>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-[11px] font-bold text-brand-dark dark:text-brand-light">已加入截圖脈絡</p>
+                        <p class="text-[10px] text-gray-400">AI 將優先分析圖片內容</p>
                     </div>
                 </div>
 
                 <div
-                    class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-[#1E1E1E]/90 backdrop-blur-lg p-4 border-t border-gray-100 dark:border-gray-800">
+                    class="flex items-center bg-gray-100 dark:bg-[#2D2D2D] rounded-full px-4 py-2.5 focus-within:ring-2 focus-within:ring-brand-light/50 transition-all">
+                    <button onclick="document.getElementById('image-input').click()"
+                        class="mr-3 text-gray-400 hover:text-brand transition-colors p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                            stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                            <circle cx="12" cy="13" r="3.25" stroke="currentColor" />
+                        </svg>
+                    </button>
+                    <input type="file" id="image-input" accept="image/*" class="hidden"
+                        onchange="handleImagePreview(this)">
 
-                    <div id="image-preview-container" class="hidden mb-3 flex items-center animate-fade-in">
-                        <div class="relative inline-block">
-                            <img id="image-preview" src=""
-                                class="w-20 h-20 object-cover rounded-xl border-2 border-brand-light shadow-md">
-                            <button onclick="clearImage()"
-                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-600 active:scale-90 transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-[11px] font-bold text-brand-dark dark:text-brand-light">已加入截圖脈絡</p>
-                            <p class="text-[10px] text-gray-400">AI 將優先分析圖片內容</p>
-                        </div>
+                    <input id="emotion-input" type="text" maxlength="100" oninput="updateCount()"
+                        onkeydown="if(event.key === 'Enter') sendEmotion()" placeholder="敘述情況或貼上截圖..."
+                        class="flex-1 bg-transparent outline-none text-[15px] text-gray-700 dark:text-gray-100 placeholder-gray-400">
+
+                    <span id="emotion-count" class="text-[10px] text-gray-400 font-mono ml-2">0/100</span>
+                    <button onclick="sendEmotion()"
+                        class="ml-3 text-brand hover:text-brand-dark transition-all p-1 active:scale-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+                            <path
+                                d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-center text-[9px] text-gray-400 mt-2">LittleTone 可能會出錯，請查證相關資訊。</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-drawer"
+        class="fixed inset-y-0 right-0 w-64 bg-white dark:bg-[#1E1E1E] shadow-2xl z-[100] transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white">設定</h2>
+                <button onclick="toggleSettings()" class="text-gray-400">✕</button>
+            </div>
+            <div class="space-y-8">
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">主題模式</p>
+                    <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                        <button onclick="setTheme('light')" id="btn-light"
+                            class="flex-1 py-1.5 text-sm rounded-md transition">淺色</button>
+                        <button onclick="setTheme('dark')" id="btn-dark"
+                            class="flex-1 py-1.5 text-sm rounded-md transition">深色</button>
                     </div>
-
-                    <div
-                        class="flex items-center bg-gray-100 dark:bg-[#2D2D2D] rounded-full px-4 py-2.5 focus-within:ring-2 focus-within:ring-brand-light/50 transition-all">
-
-                        <button onclick="document.getElementById('image-input').click()"
-                            class="mr-3 text-gray-400 hover:text-brand transition-colors p-1" title="上傳截圖">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
-                                stroke="currentColor" class="w-6 h-6">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                                <circle cx="12" cy="13" r="3.25" stroke="currentColor" />
-                            </svg>
-                        </button>
-
-                        <input type="file" id="image-input" accept="image/*" class="hidden"
-                            onchange="handleImagePreview(this)">
-
-                        <input id="emotion-input" type="text" maxlength="100" oninput="updateCount()"
-                            onkeydown="if(event.key === 'Enter') sendEmotion()" placeholder="敘述情況或貼上截圖..."
-                            class="flex-1 bg-transparent outline-none text-[15px] text-gray-700 dark:text-gray-100 placeholder-gray-400">
-
-                        <span id="emotion-count" class="text-[10px] text-gray-400 font-mono ml-2">0/100</span>
-
-                        <button onclick="sendEmotion()"
-                            class="ml-3 text-brand hover:text-brand-dark transition-all p-1 active:scale-90 disabled:opacity-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="w-7 h-7">
-                                <path
-                                    d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                            </svg>
-                        </button>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">字體大小</p>
+                    <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                        <button onclick="setFontSize('standard')" id="btn-font-std"
+                            class="flex-1 py-1.5 text-sm rounded-md transition">標準</button>
+                        <button onclick="setFontSize('large')" id="btn-font-lrg"
+                            class="flex-1 py-1.5 text-sm rounded-md transition">放大</button>
                     </div>
-
-                    <p class="text-center text-[9px] text-gray-400 mt-2">LittleTone 可能會出錯，請查證相關資訊。</p>
+                </div>
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">對話管理</p>
+                    <button onclick="confirmResetChat()"
+                        class="w-full py-3 border border-red-100 text-red-400 rounded-xl text-sm font-medium transition hover:bg-red-50 flex items-center justify-center space-x-2">
+                        <span>清空當前對話</span> <span>🗑️</span>
+                    </button>
+                </div>
+                <div class="pt-4">
+                    <button onclick="shareToFriends()"
+                        class="w-full py-3 bg-brand-light dark:bg-brand-dark/20 text-brand-dark dark:text-brand-light rounded-xl text-sm font-bold transition flex items-center justify-center space-x-2">
+                        <span>分享給好友</span> <span>✨</span>
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="settings-drawer"
-            class="fixed inset-y-0 right-0 w-64 bg-white dark:bg-[#1E1E1E] shadow-2xl z-[100] transform translate-x-full transition-transform duration-300 ease-in-out">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-lg font-bold text-gray-800 dark:text-white">設定</h2>
-                    <button onclick="toggleSettings()" class="text-gray-400">✕</button>
-                </div>
-                <div class="space-y-8">
-                    <div>
-                        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">主題模式</p>
-                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                            <button onclick="setTheme('light')" id="btn-light"
-                                class="flex-1 py-1.5 text-sm rounded-md transition">淺色</button>
-                            <button onclick="setTheme('dark')" id="btn-dark"
-                                class="flex-1 py-1.5 text-sm rounded-md transition">深色</button>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">字體大小</p>
-                        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                            <button onclick="setFontSize('standard')" id="btn-font-std"
-                                class="flex-1 py-1.5 text-sm rounded-md transition">標準</button>
-                            <button onclick="setFontSize('large')" id="btn-font-lrg"
-                                class="flex-1 py-1.5 text-sm rounded-md transition">放大</button>
-                        </div>
-                    </div>
-                    <div class="space-y-8">
-                        <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
-                            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">對話管理</p>
-                            <button onclick="confirmResetChat()"
-                                class="w-full py-3 border border-red-100 text-red-400 rounded-xl text-sm font-medium transition hover:bg-red-50 flex items-center justify-center space-x-2">
-                                <span>清空當前對話</span> <span>🗑️</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="pt-4">
-                        <button onclick="shareToFriends()"
-                            class="w-full py-3 bg-brand-light dark:bg-brand-dark/20 text-brand-dark dark:text-brand-light rounded-xl text-sm font-bold transition flex items-center justify-center space-x-2">
-                            <span>分享給好友</span> <span>✨</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="settings-overlay" onclick="toggleSettings()"
+        class="fixed inset-0 bg-black/20 z-[90] hidden backdrop-blur-sm"></div>
 
-        <div id="settings-overlay" onclick="toggleSettings()"
-            class="fixed inset-0 bg-black/20 z-[90] hidden backdrop-blur-sm"></div>
-
-        <script>
-            const MY_LIFF_ID = "{{ liff_id }}"; 
-        </script>
-
-        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 
 </html>

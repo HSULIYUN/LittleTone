@@ -1,44 +1,28 @@
-// --- 全域變數 ---
-let isLiffReady = false;
-let currentTone = '溫和';
-let hiddenOptions = [];
+// --- 1. 全域變數與狀態管理 ---
+let chatHistory = [];
+let currentSuggestedScenarios = [];
 let currentCoachData = null;
 let currentImageBase64 = null;
-let currentSuggestedScenarios = [];
+let isLiffReady = false;
 
-// --- 1. 初始化邏輯 ---
+// --- 2. 初始化邏輯 ---
 document.addEventListener('DOMContentLoaded', () => {
     // 檢查引導紀錄
     if (localStorage.getItem('hasLearnedMinimize') === 'true') {
         const guide = document.getElementById('minimize-guide');
         if (guide) guide.remove();
     }
-
-    // 初始化 LIFF (支援本地開發模式)
     initializeLiff();
 });
 
 async function initializeLiff() {
     try {
-        // 從 window 全域物件中讀取我們剛才注入的變數
         const liffId = window.MY_LIFF_ID;
-
-        if (!liffId || liffId === "") {
-            console.warn("⚠️ [LIFF] 未偵測到 LINE_LIFF_ID，進入純網頁測試模式");
-            return;
-        }
-
-        // 檢查 LIFF SDK 是否正常載入
-        if (typeof liff === 'undefined') {
-            console.error("❌ [LIFF] 找不到 LIFF SDK，請確認 HTML 內有引入 CDN 連結");
-            return;
-        }
-
+        if (!liffId) return;
         await liff.init({ liffId });
         isLiffReady = true;
-
     } catch (error) {
-        console.warn("❌ [LIFF] 初始化失敗:", error.message);
+        console.warn("LIFF 初始化失敗");
     }
 }
 
@@ -57,15 +41,14 @@ async function sendEmotion() {
     const text = inputElement.value.trim();
 
     if (!text && !currentImageBase64) {
-        Swal.fire({ icon: 'info', title: '請輸入訊息或上傳圖片喔！' });
+        Swal.fire({ icon: 'info', title: '請輸入訊息或上傳截圖喔！' });
         return;
     }
 
-    // 1. ✨ 呼叫統一重置
-    resetScenarioUI();
+    resetScenarioUI(); // 重置 UI
 
-    const payloadImage = currentImageBase64;
     const payloadText = text;
+    const payloadImage = currentImageBase64;
 
     inputElement.value = "";
     clearImage();
@@ -74,8 +57,7 @@ async function sendEmotion() {
     if (payloadImage) addMessage(payloadImage, 'user', false, true);
     if (payloadText) addMessage(payloadText, 'user');
 
-    // 使用統一的 Loading 動畫
-    const loadingId = addMessage(LOADING_HTML, 'system', true);
+    const loadingId = addMessage('<div class="flex space-x-1.5 h-6 items-center px-1"><div class="w-2 h-2 rounded-full animate-bounce bg-brand"></div><div class="w-2 h-2 rounded-full animate-bounce delay-100 bg-brand"></div><div class="w-2 h-2 rounded-full animate-bounce delay-200 bg-brand"></div></div>', 'system', true);
 
     try {
         const res = await fetch('/api/chat', {
@@ -83,7 +65,8 @@ async function sendEmotion() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: payloadText,
-                image: payloadImage ? payloadImage.split(',')[1] : null
+                image: payloadImage ? payloadImage.split(',')[1] : null,
+                history: chatHistory
             })
         });
 
@@ -95,15 +78,66 @@ async function sendEmotion() {
             addMessage(data.reply, 'system');
             if (data.key_change) addHighlightBubble(data.key_change);
 
+            // 更新記憶庫：確保 AI 能記得剛才聊過什麼
+            chatHistory.push({ "role": "user", "content": payloadText || "📷 [發送截圖分析]" });
+            chatHistory.push({ "role": "assistant", "content": data.reply });
+
             currentSuggestedScenarios = data.suggested_scenarios || [];
             currentCoachData = { analysis: data.analysis, tip: data.tip };
 
-            showOptions();
+            // 診斷分流 UI
+            if (data.status === "diagnosing") {
+                addQuickReplyChips(currentSuggestedScenarios);
+            } else {
+                addReadyButton();
+            }
         }
     } catch (e) {
         removeMessage(loadingId);
         addMessage('連線不穩，請再試一次。', 'system');
     }
+}
+
+// 診斷階段的快捷按鈕 (Chip)
+function addQuickReplyChips(options) {
+    const history = document.getElementById('chat-history');
+    const container = document.createElement('div');
+    container.className = "suggested-scenarios-container flex flex-wrap gap-2 mt-2 mb-4 animate-fade-in-up ml-2";
+
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "px-4 py-2 bg-white dark:bg-gray-800 border border-brand text-brand-dark text-[13px] rounded-full shadow-sm active:scale-95 transition-all";
+        btn.innerText = opt.title;
+        btn.onclick = () => {
+            // ✨ 修正：引導按鈕點擊後將 example 填入並自動發送
+            document.getElementById('emotion-input').value = opt.example || opt.content;
+            sendEmotion();
+            container.remove();
+        };
+        container.appendChild(btn);
+    });
+    history.appendChild(container);
+    history.scrollTop = history.scrollHeight;
+}
+
+// 資訊充足後的生成按鈕
+function addReadyButton() {
+    const history = document.getElementById('chat-history');
+    const div = document.createElement('div');
+    div.id = 'btn-ready-container';
+    div.className = "flex justify-end mt-3 mb-6 animate-fade-in-up";
+    div.innerHTML = `<button onclick="showFinalScenarios()" class="bg-brand-light text-brand-dark px-5 py-2.5 rounded-full text-sm font-bold shadow-sm active:scale-95 flex items-center space-x-1">
+        <span>生成建議語氣 ✨</span>
+    </button>`;
+    history.appendChild(div);
+    history.scrollTop = history.scrollHeight;
+}
+
+function showFinalScenarios() {
+    const oldBtn = document.getElementById('btn-ready-container');
+    if (oldBtn) oldBtn.remove();
+    addOptionCards(currentSuggestedScenarios);
+    if (currentCoachData) addCoachCardToHistory(currentCoachData.analysis, currentCoachData.tip);
 }
 
 // --- 3. 圖片處理邏輯 ---
@@ -149,22 +183,19 @@ function clearImage() {
 function addMessage(content, sender, isHtml = false, isImage = false) {
     const history = document.getElementById('chat-history');
     const div = document.createElement('div');
-    const id = 'msg-' + Math.random().toString(36).substr(2, 9);
-    div.id = id;
+    div.id = 'msg-' + Math.random().toString(36).substr(2, 9);
     div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} mb-5 animate-fade-in-up`;
 
     const bubble = document.createElement('div');
     bubble.className = `px-5 py-3 text-[15px] max-w-[88%] rounded-2xl shadow-sm leading-relaxed ${sender === 'user'
         ? 'bg-gradient-to-br from-brand to-brand-dark text-white rounded-tr-none shadow-brand/20'
-        : 'bg-white dark:bg-[#2D2D2D] text-gray-700 dark:text-gray-200 rounded-tl-none border border-gray-100/50 dark:border-gray-800'
-        }`;
+        : 'bg-white dark:bg-[#2D2D2D] text-gray-700 dark:text-gray-200 rounded-tl-none border border-gray-100/50'}`;
 
     if (isImage) {
-        // 如果是圖片，創建一個 img 標籤
         const img = document.createElement('img');
-        img.src = content; // 這裡傳入完整的 data:image/... base64
-        img.className = "rounded-lg max-w-full h-auto mt-1 cursor-pointer";
-        img.onclick = () => window.open(content); // 點擊可看大圖
+        img.src = content;
+        img.className = "rounded-lg max-w-full h-auto cursor-pointer";
+        img.onclick = () => window.open(content);
         bubble.appendChild(img);
     } else if (isHtml) {
         bubble.innerHTML = content;
@@ -175,7 +206,7 @@ function addMessage(content, sender, isHtml = false, isImage = false) {
     div.appendChild(bubble);
     history.appendChild(div);
     history.scrollTop = history.scrollHeight;
-    return id;
+    return div.id;
 }
 
 function removeMessage(id) {
@@ -187,11 +218,8 @@ function addHighlightBubble(text) {
     const history = document.getElementById('chat-history');
     const div = document.createElement('div');
     div.className = "flex justify-start mb-2 animate-fade-in-up";
-    div.innerHTML = `<div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-[11px] px-3 py-1 rounded-full shadow-sm ml-2">
-        ${text}
-    </div>`;
+    div.innerHTML = `<div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-[11px] px-3 py-1 rounded-full shadow-sm ml-2">${text}</div>`;
     history.appendChild(div);
-    history.scrollTop = history.scrollHeight;
 }
 
 function addReadyButton() {
@@ -236,20 +264,14 @@ function showOptions() {
 
 function handleScenarioSelection(index) {
     if (!currentSuggestedScenarios || !currentSuggestedScenarios[index]) return;
-
     const scenario = currentSuggestedScenarios[index];
+    resetScenarioUI();
 
-    // 1. 移除建議按鈕群組
-    const oldOptions = document.querySelector('.suggested-scenarios-container');
-    if (oldOptions) oldOptions.remove();
-
-    // 2. 顯示對應的情境卡片
     addOptionCards([{
         title: scenario.title,
-        content: scenario.example
+        example: scenario.example
     }]);
 
-    // 3. 顯示深度分析診斷
     if (currentCoachData) {
         addCoachCardToHistory(currentCoachData.analysis, currentCoachData.tip);
     }
@@ -280,15 +302,11 @@ function handleNeitherSelection(btnElement) {
 async function sendCustomToneRequest() {
     const customInput = document.getElementById('custom-tone-input');
     const toneText = customInput.value.trim();
-
     if (!toneText) return;
 
-    // 1. ✨ 呼叫統一重置，解決「猜你想要」標籤殘留問題
     resetScenarioUI();
-
     addMessage(`希望能調整成這個語氣：${toneText}`, 'user');
     customInput.parentElement.remove();
-
     const loadingId = addMessage(LOADING_HTML, 'system', true);
 
     try {
@@ -296,23 +314,18 @@ async function sendCustomToneRequest() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                // ✨ 強化指令：要求 AI 必須回傳範本格式而非聊天文字
-                message: `(使用者要求直接轉化語氣。請針對目前的社交脈絡，直接以「${toneText}」的語氣產出一組回覆範例。注意：請將範例內容放在 JSON 的 "reply" 欄位，並務必提供 "analysis" 與 "tip"。)`,
-                image: null
+                message: `(指令：請針對目前的社交脈絡，直接以「${toneText}」的語氣產出一組回覆範例。內容請放在 JSON 的 "reply" 欄位。)`,
+                image: null,
+                history: chatHistory
             })
         });
-
         const jsonResponse = await res.json();
         removeMessage(loadingId);
 
         if (jsonResponse.status === "success") {
             const data = jsonResponse.data;
-            // 2. ✨ 直接呈現美觀的建議卡片，不使用普通對話氣泡
-            addOptionCards([{ title: `✨ ${toneText}語氣建議`, content: data.reply }]);
-
-            if (data.analysis && data.tip) {
-                addCoachCardToHistory(data.analysis, data.tip);
-            }
+            addOptionCards([{ title: `✨ ${toneText}語氣建議`, example: data.reply }]);
+            if (data.analysis && data.tip) addCoachCardToHistory(data.analysis, data.tip);
         }
     } catch (e) {
         removeMessage(loadingId);
@@ -326,22 +339,21 @@ function addOptionCards(options) {
     container.className = "flex flex-col space-y-3 mt-2 ml-2 mb-6 animate-fade-in-up";
 
     options.forEach((opt) => {
-        const safeContent = opt.content.replace(/'/g, "\\'").replace(/\n/g, "\\n");
+        // ✨ 強大防呆：解決 replace 報錯的核心修正
+        const rawContent = opt.example || opt.content || "";
+        if (!rawContent) return;
+
+        const safeContent = rawContent.replace(/'/g, "\\'").replace(/\n/g, "\\n");
         const card = document.createElement('div');
         card.className = "option-card bg-white dark:bg-[#2D2D2D] border border-gray-100 dark:border-gray-800 p-4 rounded-2xl shadow-sm mb-3";
-
         card.innerHTML = `
-        <div class="flex items-center mb-2">
-            <span class="option-badge bg-brand-light/50 dark:bg-brand-dark/30 text-brand-dark dark:text-brand-light text-xs font-bold px-2 py-1 rounded-md mr-2">${opt.title}</span>
-        </div>
-        <div class="option-text text-[15px] text-gray-700 dark:text-gray-100 mb-4 leading-relaxed">${opt.content}</div>
-        <button onclick="sendToLine('${safeContent}')" 
-                class="w-full py-2.5 bg-brand text-white text-sm rounded-xl font-bold transition border border-brand active:scale-95 shadow-md shadow-brand/20 flex items-center justify-center gap-1">
-            <span>一鍵複製建議 ✨</span>
-        </button>`;
+            <div class="flex items-center mb-2">
+                <span class="option-badge bg-brand-light/50 text-brand-dark text-xs font-bold px-2 py-1 rounded-md mr-2">${opt.title}</span>
+            </div>
+            <div class="option-text text-[15px] text-gray-700 dark:text-gray-100 mb-4 leading-relaxed">${rawContent}</div>
+            <button onclick="sendToLine('${safeContent}')" class="w-full py-2.5 bg-brand text-white text-sm rounded-xl font-bold active:scale-95">一鍵複製建議 ✨</button>`;
         container.appendChild(card);
     });
-
     history.appendChild(container);
     history.scrollTop = history.scrollHeight;
 }
@@ -350,8 +362,18 @@ function addCoachCardToHistory(analysis, tip) {
     const history = document.getElementById('chat-history');
     const div = document.createElement('div');
     div.className = "mb-6 animate-fade-in-up ml-2";
-    const accordionId = 'coach-' + Date.now();
-    div.innerHTML = renderAccordionHTML(accordionId, analysis, tip);
+    const id = 'coach-' + Date.now();
+    div.innerHTML = `
+        <div class="bg-white dark:bg-[#2D2D2D] border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <button onclick="toggleCoach('${id}')" class="w-full flex items-center justify-between p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                <span class="text-[11px] font-bold text-gray-400">💡 為什麼 LittleTone 這樣說？</span>
+                <svg id="icon-${id}" class="w-4 h-4 text-gray-300 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="${id}" class="hidden p-4 space-y-3 text-[13px] border-t border-gray-50">
+                <div><span class="text-brand-dark font-bold text-[10px] block mb-1">🔍 診斷分析</span><p class="text-gray-600 dark:text-gray-300">${analysis}</p></div>
+                <div class="pt-2 border-t border-gray-50"> <span class="text-brand-dark font-bold text-[10px] block mb-1">🎓 深度學習</span><p class="text-gray-600 dark:text-gray-300">${tip}</p></div>
+            </div>
+        </div>`;
     history.appendChild(div);
 }
 
