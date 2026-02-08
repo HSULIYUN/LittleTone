@@ -38,8 +38,8 @@
 
 ## 🎨 主要負責項目 (Core Contributions)
 <p align="center">
-   <img  width="50%" alt="littletone_index" src="https://github.com/user-attachments/assets/8b77a229-a8ec-402e-8445-ba5e5fed0807" />
-  <img width="50%" alt="littletone_gpt" src="https://github.com/user-attachments/assets/ae64d9bd-e24a-4db0-ac42-f36976ab5612" />
+   <img  width="30%" alt="littletone_index" src="https://github.com/user-attachments/assets/8b77a229-a8ec-402e-8445-ba5e5fed0807" />
+  <img width="30%" alt="littletone_gpt" src="https://github.com/user-attachments/assets/ae64d9bd-e24a-4db0-ac42-f36976ab5612" />
 </p>
 我主要製作了「情緒安定感」出發的介面設計，以及支撐 RAG 系統運作的核心在地化知識庫。
 ### 1. 具「情緒緩衝」作用的視覺語彙
