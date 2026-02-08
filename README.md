@@ -37,6 +37,10 @@
 
 
 ## 🎨 主要負責項目 (Core Contributions)
+<p align="center">
+   <img width="30%" alt="littletone_index" src="https://github.com/user-attachments/assets/be2ae80c-af11-45e9-976b-b721531f7f83" />
+   <img width="30%" alt="littletone_gpt" src="https://github.com/user-attachments/assets/8fb82be6-3bc9-4cdb-ae7a-3af161d976d0" />
+</p>
 我主要製作了「情緒安定感」出發的介面設計，以及支撐 RAG 系統運作的核心在地化知識庫。
 ### 1. 具「情緒緩衝」作用的視覺語彙
 在面對社交焦慮的情境下，過於刺眼或複雜的介面會增加壓力。因此在 **Figma** 流程設計中：
